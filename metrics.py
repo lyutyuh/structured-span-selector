@@ -1,0 +1,214 @@
+from __future__ import absolute_import
+from __future__ import division
+from __future__ import print_function
+
+import numpy as np
+from collections import Counter, defaultdict
+
+# from scipy.optimize import linear_sum_assignment as linear_assignment
+# from sklearn.utils.linear_assignment_ import linear_assignment
+from scipy.optimize import linear_sum_assignment
+
+from blanc import blanc, tuple_to_metric
+
+
+def f1(p_num, p_den, r_num, r_den, beta=1):
+    p = 0 if p_den == 0 else p_num / float(p_den)
+    r = 0 if r_den == 0 else r_num / float(r_den)
+    return 0 if p + r == 0 else (1 + beta * beta) * p * r / (beta * beta * p + r)
+
+
+class CorefEvaluator(object):
+    def __init__(self):
+        self.evaluators = [Evaluator(m) for m in (muc, b_cubed, ceafe)]
+        self.all_gm = 1e-6
+        self.recalled_gm = 1e-6
+        
+        self.all_gm_by_width = defaultdict((int))
+        self.recalled_gm_by_width = defaultdict((int))
+        
+        self.all_gm_by_depth = defaultdict((int))
+        self.recalled_gm_by_depth = defaultdict((int))
+        
+        self.c_tuple = [0,0,0]
+        self.n_tuple = [0,0,0]
+
+    def update(
+        self, predicted, gold, mention_to_predicted, mention_to_gold, 
+        metainfo_gms, recalled_gms # all_gm, recalled_gm
+    ):
+        for e in self.evaluators:
+            e.update(predicted, gold, mention_to_predicted, mention_to_gold)
+        self.all_gm += len(metainfo_gms)
+        self.recalled_gm += len(recalled_gms & set(metainfo_gms.keys()))
+        
+        for x, v in metainfo_gms.items():
+            self.all_gm_by_width[v['width']] += 1
+            self.all_gm_by_depth[v['depth']] += 1
+            if x in recalled_gms:
+                self.recalled_gm_by_width[v['width']] += 1
+                self.recalled_gm_by_depth[v['depth']] += 1
+        
+        
+        
+        c_tuple, n_tuple = blanc(gold, predicted)
+        for i in range(3):
+            self.c_tuple[i] += c_tuple[i]
+        for i in range(3):
+            self.n_tuple[i] += n_tuple[i]
+
+    def get_all(self):
+        all_res = {}
+        name_dict = {0: "muc", 1: "b_cubed", 2: "ceafe"}
+        for i, e in enumerate(self.evaluators):
+            all_res[name_dict[i]+"_f1"] = e.get_f1()
+            all_res[name_dict[i]+"_p"] = e.get_precision()
+            all_res[name_dict[i]+"_r"] = e.get_recall()
+            
+        return all_res
+
+    def get_f1(self):
+        for e in self.evaluators:
+            print("f:", e.get_f1())
+        
+        return sum(e.get_f1() for e in self.evaluators) / len(self.evaluators)
+
+    def get_recall(self):
+        for e in self.evaluators:
+            print("r:", e.get_recall())
+        return sum(e.get_recall() for e in self.evaluators) / len(self.evaluators)
+
+    def get_precision(self):
+        for e in self.evaluators:
+            print("p:", e.get_precision())
+        return sum(e.get_precision() for e in self.evaluators) / len(self.evaluators)
+
+    def get_prf(self):
+        blanc_scores = tuple_to_metric(self.c_tuple, self.n_tuple)
+        blanc_p, blanc_r, blanc_f = tuple(0.5*(a+b) for (a,b) in zip(*blanc_scores))
+        print("all_gm", self.all_gm)
+        
+        print(self.all_gm_by_width)
+        print(self.recalled_gm_by_width)
+        
+        print(self.all_gm_by_depth)
+        print(self.recalled_gm_by_depth)
+        
+        return self.get_precision(), self.get_recall(), self.get_f1(), self.recalled_gm / self.all_gm, (blanc_p, blanc_r, blanc_f)
+
+
+class Evaluator(object):
+    def __init__(self, metric, beta=1):
+        self.p_num = 0
+        self.p_den = 0
+        self.r_num = 0
+        self.r_den = 0
+        self.metric = metric
+        self.beta = beta
+
+    def update(self, predicted, gold, mention_to_predicted, mention_to_gold):
+        if self.metric == ceafe:
+            pn, pd, rn, rd = self.metric(predicted, gold)
+        else:
+            pn, pd = self.metric(predicted, mention_to_gold)
+            rn, rd = self.metric(gold, mention_to_predicted)
+        self.p_num += pn
+        self.p_den += pd
+        self.r_num += rn
+        self.r_den += rd
+
+    def get_f1(self):
+        return f1(self.p_num, self.p_den, self.r_num, self.r_den, beta=self.beta)
+
+    def get_recall(self):
+        return 0 if self.r_num == 0 else self.r_num / float(self.r_den)
+
+    def get_precision(self):
+        return 0 if self.p_num == 0 else self.p_num / float(self.p_den)
+
+    def get_prf(self):
+        return self.get_precision(), self.get_recall(), self.get_f1()
+
+    def get_counts(self):
+        return self.p_num, self.p_den, self.r_num, self.r_den
+
+
+def evaluate_documents(documents, metric, beta=1):
+    evaluator = Evaluator(metric, beta=beta)
+    for document in documents:
+        evaluator.update(document)
+    return evaluator.get_precision(), evaluator.get_recall(), evaluator.get_f1()
+
+
+def b_cubed(clusters, mention_to_gold):
+    num, dem = 0, 0
+
+    for c in clusters:
+        # if len(c) == 1:
+        #    continue
+
+        gold_counts = Counter()
+        correct = 0
+        for m in c:
+            if m in mention_to_gold:
+                gold_counts[tuple(mention_to_gold[m])] += 1
+        for c2, count in gold_counts.items():
+            # if len(c2) != 1:
+            correct += count * count
+
+        num += correct / float(len(c))
+        dem += len(c)
+
+    return num, dem
+
+
+def muc(clusters, mention_to_gold):
+    tp, p = 0, 0
+    for c in clusters:
+        p += len(c) - 1
+        tp += len(c)
+        linked = set()
+        for m in c:
+            if m in mention_to_gold:
+                linked.add(mention_to_gold[m])
+            else:
+                tp -= 1
+        tp -= len(linked)
+    return tp, p
+
+
+def phi4(c1, c2):
+    return 2 * len([m for m in c1 if m in c2]) / float(len(c1) + len(c2))
+
+
+def ceafe(clusters, gold_clusters):
+    clusters = [c for c in clusters] # if len(c) != 1]
+    scores = np.zeros((len(gold_clusters), len(clusters)))
+    for i in range(len(gold_clusters)):
+        for j in range(len(clusters)):
+            scores[i, j] = phi4(gold_clusters[i], clusters[j])
+    matching = linear_sum_assignment(-scores)
+    matching = np.transpose(np.asarray(matching))
+    similarity = sum(scores[matching[:,0], matching[:,1]])
+    return similarity, len(clusters), similarity, len(gold_clusters)
+
+
+def lea(clusters, mention_to_gold):
+    num, dem = 0, 0
+
+    for c in clusters:
+        if len(c) == 1:
+            continue
+
+        common_links = 0
+        all_links = len(c) * (len(c) - 1) / 2.0
+        for i, m in enumerate(c):
+            if m in mention_to_gold:
+                for m2 in c[i + 1:]:
+                    if m2 in mention_to_gold and mention_to_gold[m] == mention_to_gold[m2]:
+                        common_links += 1
+
+        num += len(c) * common_links / float(all_links)
+        dem += len(c)
+
+    return num, dem
