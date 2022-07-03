@@ -1,0 +1,17 @@
+name: sss
+channels:
+  - pytorch
+  - conda-forge
+  - defaults
+dependencies:
+  - huggingface_hub
+  - pip
+  - scipy
+  - pyhocon
+  - python=3.8 
+  - pytorch=1.11.0
+  - tensorboard
+  - tqdm
+  - transformers=4.19.3
+  - numpy
+  - scikit-learn
