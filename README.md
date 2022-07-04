@@ -20,6 +20,7 @@ For all **span selection** tasks (e.g. coreference resolution, semantic role lab
 First of all:
 ```bash
    git clone https://github.com/lyutyuh/structured-span-selector.git
+   cd structured-span-selector
 ```
 
 1. Create a virtual environment with Conda
