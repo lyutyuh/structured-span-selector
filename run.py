@@ -16,7 +16,6 @@ from torch.optim.lr_scheduler import LambdaLR
 import json
 
 import model as Model
-import model_t5 as ModelT5
 
 import conll
 import sys
@@ -28,7 +27,6 @@ logging.basicConfig(format='%(asctime)s - %(levelname)s - %(name)s - %(message)s
                     datefmt='%m/%d/%Y %H:%M:%S',
                     level=logging.INFO)
 logger = logging.getLogger()
-
 
 class Runner:
     def __init__(self, config_name, gpu_id=0, seed=None):
@@ -57,10 +55,7 @@ class Runner:
         self.data = CorefDataProcessor(self.config)
 
     def initialize_model(self, saved_suffix=None):
-        if self.config['bert_tokenizer_name'] == 't5-small':
-            model = ModelT5.CorefModel(self.config, self.device)
-        else:
-            model = Model.CorefModel(self.config, self.device)
+        model = Model.CorefModel(self.config, self.device)
         if saved_suffix:
             self.load_model_checkpoint(model, saved_suffix)
         return model
@@ -230,10 +225,6 @@ class Runner:
             predicted_clusters = model.update_evaluator(span_starts, span_ends, antecedent_idx, antecedent_scores, gold_clusters, evaluator)
             doc_to_prediction[doc_key] = predicted_clusters
             
-            if predict:
-                logger.info(ModelT5.tz.convert_ids_to_tokens(example_gpu[0].unsqueeze(-1)[example_gpu[1].bool()].squeeze(-1)))
-                logger.info(predicted_clusters)
-                logger.info(gold_clusters)
 
         p, r, f, m_recall, (blanc_p, blanc_r, blanc_f) = evaluator.get_prf()
         all_metrics = evaluator.get_all()
@@ -320,7 +311,6 @@ class Runner:
             LambdaLR(optimizers[1], lr_lambda_task)
         ]
         return schedulers
-        # return LambdaLR(optimizer, [lr_lambda_bert, lr_lambda_bert, lr_lambda_task, lr_lambda_task])
 
     def save_model_checkpoint(self, model, step):
         path_ckpt = join(self.config['log_dir'], f'model_{self.name_suffix}_{step}.bin')
