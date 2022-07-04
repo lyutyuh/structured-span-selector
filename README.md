@@ -27,15 +27,16 @@ First of all:
     conda create -n sss --file requirements_conda.txt -c conda-forge
 ```
 
-2. **Install genbmm with [inside-outside algorithm extension](https://github.com/lyutyuh/genbmm)**
+2. Activate the new environment
+```bash
+    conda activate sss
+```
+
+3. **Install genbmm with [inside-outside algorithm extension](https://github.com/lyutyuh/genbmm)**
 ```bash
     pip install git+https://github.com/lyutyuh/genbmm
 ```
 
-3. Activate the new environment
-```bash
-    conda activate sss
-```
 
 
 ## Training
