@@ -24,7 +24,7 @@ First of all:
 
 1. Create a virtual environment with Conda
 ```bash
-    conda create -n sss --file requirements_conda.txt -c conda-forge
+    conda env create -f sss.yml
 ```
 
 2. Activate the new environment
