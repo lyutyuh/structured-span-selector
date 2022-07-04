@@ -29,7 +29,7 @@ First of all:
 
 2. **Install genbmm with [inside-outside algorithm extension](https://github.com/lyutyuh/genbmm)**
 ```bash
-    !pip install -qU git+https://github.com/lyutyuh/genbmm
+    pip install git+https://github.com/lyutyuh/genbmm
 ```
 
 3. Activate the new environment
@@ -61,7 +61,7 @@ If you find this repo helpful, please cite the following version of the paper:
     author = {Liu, Tianyu and Jiang, Yuchen Eleanor and Cotterell, Ryan and Sachan, Mrinmaya},
     booktitle = {Proceedings of the 2022 Conference of the North American Chapter of the Association for Computational Linguistics: Human Language Technologies},
     month = jul,
-    year = "2022",
+    year = 2022,
     address = {Seattle, United States},
     publisher = {Association for Computational Linguistics},
     url = {https://arxiv.org/abs/2205.03977},
