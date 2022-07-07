@@ -38,6 +38,15 @@ class CKY(torch.nn.Module):
         span_mention_score_matrix: torch.FloatTensor, 
         sequence_lengths: torch.IntTensor,
     ) -> Tuple[torch.FloatTensor]:
+        """
+            Parameters:
+                span_mention_score_matrix: shape (batch_size, sent_len, sent_len, score_dim)
+                    Score of each span being a span of interest. There are batch_size number
+                    of sentences in this document. And the maximum length of sentence is 
+                    sent_len. 
+                sequence_lengths: shape (batch_size, )
+                    The actual length of each sentence. 
+        """
         # faster inside-outside
         
         span_mention_score_matrix.requires_grad_(True)
@@ -82,6 +91,15 @@ class CKY(torch.nn.Module):
         span_mention_score_matrix: torch.FloatTensor, 
         sequence_lengths: torch.IntTensor,
     ) -> Tuple[torch.FloatTensor]:
+        """
+            Parameters:
+                span_mention_score_matrix: shape (batch_size, sent_len, sent_len, score_dim)
+                    Score of each span being a span of interest. There are batch_size number
+                    of sentences in this document. And the maximum length of sentence is 
+                    sent_len. 
+                sequence_lengths: shape (batch_size, )
+                    The actual length of each sentence. 
+        """
         # inside-outside
         
         span_mention_score_matrix.requires_grad_(True)
