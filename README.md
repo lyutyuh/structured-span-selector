@@ -10,9 +10,9 @@ _Tianyu Liu, Yuchen Eleanor Jiang, Ryan Cotterell, and Mrinmaya Sachan_
 
 ## Overall idea
 
-For all **span selection** tasks (e.g. coreference resolution, semantic role labelling, question answering), we learn the latent **context-free grammar** of the spans of interest. The search space of spans $\mathcal{O}(n^2)$ is reduced to the space of nonterminals $\mathcal{O}(n)$.
+For all **span selection** tasks (e.g. coreference resolution, semantic role labelling, question answering), we learn the latent **context-free grammar** of the spans of interest. The search space of spans $O(n^2)$ is reduced to the space of nonterminals $O(n)$.
 
-<img src="fig/illustration.png" width="400">
+<img src="fig/illustration.png" width="500">
 
 
 ## Installation
