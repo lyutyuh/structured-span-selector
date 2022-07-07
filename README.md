@@ -39,6 +39,25 @@ First of all:
 ```
 
 
+## Obtaining the CoNLL-2012 data
+
+Please follow https://github.com/mandarjoshi90/coref and especially https://github.com/mandarjoshi90/coref/blob/master/setup_training.sh to obtain the {train, dev, test}.english.v4_gold_conll. There are 2802, 343, 348 documents in the {train, dev, test} datasets respectively. 
+
+The MD5 values are:
+```bash
+md5sum dev.english.v4_gold_conll
+>>> bde418ea4bbec119b3a43b43933ec2ae
+md5sum test.english.v4_gold_conll
+>>> 6e64b649a039b4320ad32780db3abfa1
+md5sum train.english.v4_gold_conll
+>>> 9f92a664298dc78600fd50813246aa77
+```
+
+Then, run
+```bash
+python minimize.py ./data_dir/ ./data_dir/ false 
+```
+and get the jsonlines files.
 
 ## Training
 
