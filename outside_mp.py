@@ -10,7 +10,7 @@ from torch.nn.parallel import DataParallel
 
 from util import logsumexp, clip_to_01, stripe, masked_topk_non_overlap
 
-from genbmm import logbmm, logbmminside
+from genbmm import logbmm, logbmminside_rule
 
 logger = logging.getLogger(__name__)
 LARGENUMBER = 1e4
@@ -30,7 +30,8 @@ class CKY(torch.nn.Module):
    ) -> Tuple[torch.FloatTensor]:
         
         with torch.autograd.enable_grad():
-            # Enable gradients during inference
+            # Enable autograd during inference
+            # For outside value computation
             return self.coolio(span_mention_score_matrix, sequence_lengths)
           
     def coolio(
@@ -48,7 +49,8 @@ class CKY(torch.nn.Module):
                     The actual length of each sentence. 
         """
         # faster inside-outside
-        
+        # requiring grad for outside algorithm
+        # https://www.cs.jhu.edu/~jason/papers/eisner.spnlp16.pdf
         span_mention_score_matrix.requires_grad_(True)
         
         batch_size, _, _, score_dim = span_mention_score_matrix.size()
@@ -57,21 +59,18 @@ class CKY(torch.nn.Module):
         sequence_lengths = sequence_lengths.view(-1)
         
         rules = span_mention_score_matrix
+        # distributive law: log(exp(s+r) + exp(s)) == s + log(exp(r) + 1)
         log1p_exp_rules = torch.log1p(rules.squeeze(-1).exp())
         
         zero_rules = (rules.new_ones(seq_len, seq_len).tril(diagonal=-1))*(-LARGENUMBER)
-        zero_rules = zero_rules.unsqueeze(0).unsqueeze(-1).repeat(batch_size, 1,1,1)
+        zero_rules = zero_rules.unsqueeze(0).unsqueeze(-1).repeat(batch_size,1,1,1)
         
         inside_s = torch.cat([rules.clone(), zero_rules], dim=3)
         inside_s = inside_s.logsumexp(dim=3)
         
-        diag_mask = torch.zeros_like(inside_s[0])
-            
         for width in range(0, seq_len-1):
-            inside_s = logbmminside(inside_s, width+1)
-            inside_s = inside_s + torch.diagonal_scatter(
-                diag_mask, torch.ones_like(diag_mask.diagonal(width+1)), width+1
-            ).unsqueeze(0) * log1p_exp_rules
+            # Usage: https://github.com/lyutyuh/genbmm
+            inside_s = logbmminside_rule(inside_s, log1p_exp_rules, width+1)
             
         series_batchsize = torch.arange(0, batch_size, dtype=torch.long)
         Z = inside_s[series_batchsize, 0, sequence_lengths-1] # (batch_size, )
@@ -101,7 +100,6 @@ class CKY(torch.nn.Module):
                     The actual length of each sentence. 
         """
         # inside-outside
-        
         span_mention_score_matrix.requires_grad_(True)
         
         batch_size, _, _, score_dim = span_mention_score_matrix.size()
@@ -123,7 +121,6 @@ class CKY(torch.nn.Module):
                     span_mention_score_matrix.diagonal(width)
                 )
                 continue
-
             # [n, width, score_dim + 1, batch_size]
             split_1 = stripe(inside_s, n, width)
             split_2 = stripe(inside_s, n, width, (1, width), 0)
