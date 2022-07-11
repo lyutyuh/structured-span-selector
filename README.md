@@ -77,14 +77,18 @@ and get the jsonlines files.
 
 If you find this repo helpful, please cite the following version of the paper:
 ```tex
-@inproceedings{liu-etal-2022-a,
-    title = {A Structured Span Selector},
-    author = {Liu, Tianyu and Jiang, Yuchen Eleanor and Cotterell, Ryan and Sachan, Mrinmaya},
-    booktitle = {Proceedings of the 2022 Conference of the North American Chapter of the Association for Computational Linguistics: Human Language Technologies},
+@inproceedings{liu-etal-2022-structured,
+    title = "A Structured Span Selector",
+    author = "Liu, Tianyu  and
+      Jiang, Yuchen  and
+      Cotterell, Ryan  and
+      Sachan, Mrinmaya",
+    booktitle = "Proceedings of the 2022 Conference of the North American Chapter of the Association for Computational Linguistics: Human Language Technologies",
     month = jul,
-    year = 2022,
-    address = {Seattle, United States},
-    publisher = {Association for Computational Linguistics},
-    url = {https://arxiv.org/abs/2205.03977},
+    year = "2022",
+    address = "Seattle, United States",
+    publisher = "Association for Computational Linguistics",
+    url = "https://aclanthology.org/2022.naacl-main.189",
+    pages = "2629--2641",
 }
 ```
